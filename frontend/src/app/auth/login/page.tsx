@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Lock, LogIn, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 function LoginForm() {
   const { login } = useAuth();
@@ -58,6 +59,7 @@ function LoginForm() {
               <input
                 type="email"
                 required
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -71,6 +73,7 @@ function LoginForm() {
               <input
                 type="password"
                 required
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -89,6 +92,19 @@ function LoginForm() {
             {loading ? "Logging in…" : "Log in"}
           </button>
         </form>
+
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs font-medium uppercase text-gray-400">or</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <div className="mt-5">
+          <GoogleSignInButton
+            onSuccess={() => router.push(next)}
+            onError={(message) => setError(message)}
+          />
+        </div>
       </div>
     </div>
   );

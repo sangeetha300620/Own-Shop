@@ -153,6 +153,33 @@ def add_property_images(db: Session, property_id: int, image_urls: list[str]) ->
     return images
 
 
+def delete_property_image(db: Session, property_id: int, image_id: int) -> bool:
+    image = (
+        db.query(PropertyImage)
+        .filter(PropertyImage.id == image_id, PropertyImage.property_id == property_id)
+        .first()
+    )
+    if not image:
+        return False
+
+    was_primary = image.is_primary
+    db.delete(image)
+    db.commit()
+
+    if was_primary:
+        next_image = (
+            db.query(PropertyImage)
+            .filter(PropertyImage.property_id == property_id)
+            .order_by(PropertyImage.display_order)
+            .first()
+        )
+        if next_image:
+            next_image.is_primary = True
+            db.commit()
+
+    return True
+
+
 def primary_image_url(prop: Property) -> str | None:
     if not prop.images:
         return None

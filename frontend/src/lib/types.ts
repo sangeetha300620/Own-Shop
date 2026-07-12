@@ -7,10 +7,11 @@ export interface User {
   id: number;
   full_name: string;
   email: string;
-  phone: string;
+  phone: string | null;
   role: "user" | "admin";
   company_name: string | null;
   is_active: boolean;
+  avatar_url: string | null;
   created_at: string;
 }
 

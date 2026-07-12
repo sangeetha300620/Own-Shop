@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Briefcase, Building2, Lock, Mail, Phone, User, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const fieldClass =
   "w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
@@ -125,6 +126,19 @@ export default function RegisterPage() {
             {loading ? "Creating account…" : "Sign up"}
           </button>
         </form>
+
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs font-medium uppercase text-gray-400">or</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <div className="mt-5">
+          <GoogleSignInButton
+            onSuccess={() => router.push("/")}
+            onError={(message) => setError(message)}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, create_refresh_token, decode_token, verify_password
 from app.crud import crud_user
 from app.models.user import User
 from app.schemas.user import (
     AccessTokenOut,
+    GoogleAuthRequest,
     RefreshRequest,
     TokenPair,
     UserLogin,
@@ -36,8 +40,40 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenPair)
 def login(data: UserLogin, db: Session = Depends(get_db)):
     user = crud_user.get_by_email(db, data.email)
-    if not user or not verify_password(data.password, user.password_hash):
+    if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is deactivated")
+
+    return TokenPair(
+        access_token=create_access_token(str(user.id)),
+        refresh_token=create_refresh_token(str(user.id)),
+        user=UserOut.model_validate(user),
+    )
+
+
+@router.post("/google", response_model=TokenPair)
+def google_login(data: GoogleAuthRequest, db: Session = Depends(get_db)):
+    try:
+        payload = google_id_token.verify_oauth2_token(
+            data.id_token,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10,
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    if not payload.get("email_verified", False):
+        raise HTTPException(status_code=401, detail="Google email not verified")
+
+    user = crud_user.get_or_create_google_user(
+        db,
+        google_id=payload["sub"],
+        email=payload["email"],
+        full_name=payload.get("name") or payload["email"],
+        avatar_url=payload.get("picture"),
+    )
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
 

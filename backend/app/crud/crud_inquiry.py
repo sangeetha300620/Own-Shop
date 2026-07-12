@@ -22,3 +22,18 @@ def list_received_inquiries(db: Session, owner_id: int) -> list[Inquiry]:
         .order_by(Inquiry.created_at.desc())
         .all()
     )
+
+
+def delete_received_inquiry(db: Session, inquiry_id: int, owner_id: int) -> bool:
+    inquiry = (
+        db.query(Inquiry)
+        .join(Property, Inquiry.property_id == Property.id)
+        .filter(Inquiry.id == inquiry_id, Property.owner_id == owner_id)
+        .first()
+    )
+    if not inquiry:
+        return False
+
+    db.delete(inquiry)
+    db.commit()
+    return True

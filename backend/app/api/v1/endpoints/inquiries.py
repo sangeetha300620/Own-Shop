@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -44,3 +44,13 @@ def received_inquiries(current_user: User = Depends(get_current_user), db: Sessi
         )
         for i in inquiries
     ]
+
+
+@router.delete("/inquiries/{inquiry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_received_inquiry(
+    inquiry_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not crud_inquiry.delete_received_inquiry(db, inquiry_id, current_user.id):
+        raise HTTPException(status_code=404, detail="Inquiry not found")

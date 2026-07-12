@@ -16,6 +16,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
   logout: () => void;
 }
@@ -50,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(tokens.user);
   }
 
+  async function loginWithGoogle(idToken: string) {
+    const tokens = await api.post<TokenPair>("/auth/google", { id_token: idToken });
+    persistSession(tokens);
+    setUser(tokens.user);
+  }
+
   async function register(data: RegisterInput) {
     const tokens = await api.post<TokenPair>("/auth/register", data);
     persistSession(tokens);
@@ -64,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

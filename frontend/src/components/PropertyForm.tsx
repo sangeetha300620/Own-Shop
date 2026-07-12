@@ -13,6 +13,7 @@ import {
   Ruler,
   Upload,
   Wallet,
+  X,
 } from "lucide-react";
 import { api, ApiError, resolveImageUrl } from "@/lib/api";
 import { LISTING_TYPES } from "@/lib/format";
@@ -25,6 +26,7 @@ import type {
   Locality,
   PropertyDetail,
   PropertyFormData,
+  PropertyImage,
   ShopCategory,
 } from "@/lib/types";
 
@@ -77,6 +79,8 @@ export default function PropertyForm({ existing }: { existing?: PropertyDetail }
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [form, setForm] = useState<PropertyFormData>(emptyForm);
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+  const [existingImages, setExistingImages] = useState<PropertyImage[]>(existing?.images ?? []);
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
   const [stepError, setStepError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -110,6 +114,7 @@ export default function PropertyForm({ existing }: { existing?: PropertyDetail }
         is_corner_property: existing.is_corner_property,
         amenity_ids: existing.amenities.map((a) => a.id),
       });
+      setExistingImages(existing.images);
     }
   }, [existing]);
 
@@ -126,6 +131,19 @@ export default function PropertyForm({ existing }: { existing?: PropertyDetail }
 
   function update<K extends keyof PropertyFormData>(key: K, value: PropertyFormData[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function removeExistingImage(imageId: number) {
+    if (!existing) return;
+    setDeletingImageId(imageId);
+    try {
+      await api.del(`/properties/${existing.id}/images/${imageId}`, true);
+      setExistingImages((imgs) => imgs.filter((img) => img.id !== imageId));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to remove photo");
+    } finally {
+      setDeletingImageId(null);
+    }
   }
 
   function toggleAmenity(id: number) {
@@ -540,18 +558,28 @@ export default function PropertyForm({ existing }: { existing?: PropertyDetail }
                 {imageFiles.length} photo{imageFiles.length > 1 ? "s" : ""} selected
               </p>
             )}
-            {existing && existing.images.length > 0 && (
+            {existing && existingImages.length > 0 && (
               <div className="mt-4">
                 <p className="mb-2 text-xs font-medium text-gray-500">Current photos</p>
                 <div className="flex flex-wrap gap-2">
-                  {existing.images.map((img) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={img.id}
-                      src={resolveImageUrl(img.image_url)}
-                      alt=""
-                      className="h-16 w-20 rounded-lg object-cover"
-                    />
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="group relative h-16 w-20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveImageUrl(img.image_url)}
+                        alt=""
+                        className="h-16 w-20 rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(img.id)}
+                        disabled={deletingImageId === img.id}
+                        aria-label="Remove photo"
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -135,3 +135,15 @@ def upload_property_images(
         raise HTTPException(status_code=400, detail="No valid image files (jpg/png/webp, max 5MB each)")
 
     return crud_property.add_property_images(db, property_id, urls)
+
+
+@router.delete("/{property_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_property_image(
+    property_id: int,
+    image_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _get_owned_property_or_404(db, property_id, current_user)
+    if not crud_property.delete_property_image(db, property_id, image_id):
+        raise HTTPException(status_code=404, detail="Image not found")

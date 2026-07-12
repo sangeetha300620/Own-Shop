@@ -13,6 +13,7 @@ import {
   Phone,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [properties, setProperties] = useState<PropertyListItem[] | null>(null);
   const [inquiries, setInquiries] = useState<InquiryReceived[] | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingInquiryId, setDeletingInquiryId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/auth/login?next=/dashboard");
@@ -61,6 +63,27 @@ export default function DashboardPage() {
       toast.error(err instanceof ApiError ? err.message : "Failed to delete listing");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleDeleteInquiry(id: number, name: string) {
+    const ok = await confirm({
+      title: "Delete this inquiry?",
+      description: `The inquiry from "${name}" will be permanently removed.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+
+    setDeletingInquiryId(id);
+    try {
+      await api.del(`/inquiries/${id}`, true);
+      setInquiries((prev) => prev?.filter((i) => i.id !== id) ?? null);
+      toast.success("Inquiry deleted.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to delete inquiry");
+    } finally {
+      setDeletingInquiryId(null);
     }
   }
 
@@ -181,9 +204,19 @@ export default function DashboardPage() {
               <div key={inq.id} className="rounded-2xl border border-gray-200 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-gray-900">{inq.name}</p>
-                  <span className="text-xs text-gray-400">
-                    {new Date(inq.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">
+                      {new Date(inq.created_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteInquiry(inq.id, inq.name)}
+                      disabled={deletingInquiryId === inq.id}
+                      aria-label="Delete inquiry"
+                      className="text-gray-400 hover:text-red-600 disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-500">
                   Re:{" "}

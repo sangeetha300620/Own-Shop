@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.5-flash"
 
+    GOOGLE_CLIENT_ID: str = ""
+
     @property
     def database_url(self) -> URL:
         return URL.create(

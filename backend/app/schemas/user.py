@@ -18,16 +18,21 @@ class UserLogin(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     full_name: str
     email: str
-    phone: str
+    phone: str | None
     role: UserRole
     company_name: str | None
     is_active: bool
+    avatar_url: str | None
     created_at: datetime
 
 
