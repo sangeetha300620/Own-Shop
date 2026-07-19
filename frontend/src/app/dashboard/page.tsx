@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
+  Heart,
   Inbox,
   Mail,
   MapPin,
@@ -22,6 +23,7 @@ import type { InquiryReceived, PropertyListItem } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
+import PropertyCard from "@/components/PropertyCard";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -29,9 +31,10 @@ export default function DashboardPage() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  const [tab, setTab] = useState<"listings" | "inquiries">("listings");
+  const [tab, setTab] = useState<"listings" | "inquiries" | "saved">("listings");
   const [properties, setProperties] = useState<PropertyListItem[] | null>(null);
   const [inquiries, setInquiries] = useState<InquiryReceived[] | null>(null);
+  const [savedProperties, setSavedProperties] = useState<PropertyListItem[] | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletingInquiryId, setDeletingInquiryId] = useState<number | null>(null);
 
@@ -43,6 +46,7 @@ export default function DashboardPage() {
     if (!user) return;
     api.get<PropertyListItem[]>("/properties/mine", true).then(setProperties).catch(() => {});
     api.get<InquiryReceived[]>("/inquiries/received", true).then(setInquiries).catch(() => {});
+    api.get<PropertyListItem[]>("/saved-properties", true).then(setSavedProperties).catch(() => {});
   }, [user]);
 
   async function handleDelete(id: number, title: string) {
@@ -132,6 +136,16 @@ export default function DashboardPage() {
           }`}
         >
           Inquiries Received ({inquiries?.length ?? 0})
+        </button>
+        <button
+          onClick={() => setTab("saved")}
+          className={`px-4 py-2.5 text-sm font-semibold transition ${
+            tab === "saved"
+              ? "border-b-2 border-indigo-600 text-indigo-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Saved ({savedProperties?.length ?? 0})
         </button>
       </div>
 
@@ -248,6 +262,25 @@ export default function DashboardPage() {
               icon={Inbox}
               title="No inquiries yet"
               description="When buyers or tenants message you about a listing, you'll see it here."
+            />
+          )}
+        </div>
+      )}
+
+      {tab === "saved" && (
+        <div>
+          {savedProperties && savedProperties.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {savedProperties.map((p) => (
+                <PropertyCard key={p.id} property={p} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Heart}
+              title="No saved shops yet"
+              description="Tap the Save button on a listing to shortlist it and find it here later."
+              action={{ href: "/properties", label: "Browse Shops" }}
             />
           )}
         </div>

@@ -141,4 +141,13 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- ── Saved properties: a user's shortlist/wishlist ──────────────────
+CREATE TABLE IF NOT EXISTS saved_properties (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    property_id INTEGER NOT NULL REFERENCES properties (id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    CONSTRAINT uq_saved_property_user_property UNIQUE (user_id, property_id)
+);
+
 COMMIT;

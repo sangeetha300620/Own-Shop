@@ -6,6 +6,7 @@ import {
   Building2,
   CheckCircle2,
   Compass,
+  Heart,
   Home,
   Landmark,
   Layers,
@@ -20,11 +21,14 @@ import { useAuth } from "@/lib/auth-context";
 import { listingTypeStyles, priceLabel } from "@/lib/format";
 import type { PropertyDetail } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
+import ShareMenu from "@/components/ShareMenu";
 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [activeImage, setActiveImage] = useState(0);
@@ -35,6 +39,9 @@ export default function PropertyDetailPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+
+  const [saved, setSaved] = useState(false);
+  const [savingToggle, setSavingToggle] = useState(false);
 
   useEffect(() => {
     api
@@ -47,6 +54,39 @@ export default function PropertyDetailPage() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .get<{ is_saved: boolean }>(`/saved-properties/${id}/status`, true)
+      .then((res) => setSaved(res.is_saved))
+      .catch(() => {});
+  }, [id, user]);
+
+  const isSaved = Boolean(user) && saved;
+
+  async function toggleSave() {
+    if (!user) {
+      router.push(`/auth/login?next=/properties/${id}`);
+      return;
+    }
+    setSavingToggle(true);
+    try {
+      if (saved) {
+        await api.del(`/saved-properties/${id}`, true);
+        setSaved(false);
+        toast.success("Removed from saved shops.");
+      } else {
+        await api.post(`/saved-properties/${id}`, undefined, true);
+        setSaved(true);
+        toast.success("Saved to your shortlist.");
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setSavingToggle(false);
+    }
+  }
 
   async function handleInquiry(e: React.FormEvent) {
     e.preventDefault();
@@ -138,9 +178,28 @@ export default function PropertyDetailPage() {
           )}
 
           <div className="mt-6">
-            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles.badge}`}>
-              {property.listing_type}
-            </span>
+            <div className="flex items-start justify-between gap-3">
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles.badge}`}>
+                {property.listing_type}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleSave}
+                  disabled={savingToggle}
+                  aria-pressed={isSaved}
+                  title={isSaved ? "Remove from saved shops" : "Save this shop"}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
+                    isSaved
+                      ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                      : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Heart className={`h-4 w-4 ${isSaved ? "fill-rose-500 text-rose-500" : ""}`} />
+                  {isSaved ? "Saved" : "Save"}
+                </button>
+                <ShareMenu title={property.title} />
+              </div>
+            </div>
             <h1 className="mt-3 text-2xl font-bold text-gray-900">{property.title}</h1>
             <p className="mt-1 flex items-center gap-1.5 text-gray-500">
               <Compass className="h-4 w-4 flex-shrink-0" />
